@@ -18,6 +18,8 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<jxbrowser.version>6.21</jxbrowser.version>
 	</properties>
 
 	<dependencies>
@@ -42,6 +44,24 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>com.teamdev.jxbrowser</groupId>
+			<artifactId>jxbrowser</artifactId>
+			<version>${jxbrowser.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.teamdev.jxbrowser</groupId>
+			<artifactId>jxbrowser-win64</artifactId>
+			<version>${jxbrowser.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.teamdev.jxbrowser</groupId>
+			<artifactId>license</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/license.jar</systemPath>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -55,4 +75,11 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<repositories>
+		<repository>
+			<id>teamdev</id>
+			<url>http://maven.teamdev.com/repository/products</url>
+		</repository>
+	</repositories>
 </project>

@@ -1,5 +1,8 @@
 package pers.zyc.gui;
 
+import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
@@ -7,6 +10,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.IntStream;
@@ -17,8 +22,24 @@ import java.util.stream.IntStream;
 @SpringBootApplication
 public class Launcher {
 
-	public static void main(String[] args) {
-		SpringApplication.run(Launcher.class, args);
+	public static void main(String[] args) throws Exception {
+		JXBrowserAuth.authIfNeed();
+
+		SpringApplication app = new SpringApplication(Launcher.class);
+		app.setHeadless(false);
+		app.setBannerMode(Banner.Mode.OFF);
+		app.run(args);
+
+		Browser browser = new Browser();
+		BrowserView view = new BrowserView(browser);
+
+		JFrame frame = new JFrame("ZK GUI");
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		frame.add(view, BorderLayout.CENTER);
+		frame.setSize(500, 400);
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
+		browser.loadURL("http://localhost:9999");
 	}
 
 	@Configuration
