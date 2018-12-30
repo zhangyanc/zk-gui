@@ -33,10 +33,11 @@ public class Launcher {
 		Browser browser = new Browser();
 		BrowserView view = new BrowserView(browser);
 
-		JFrame frame = new JFrame("ZK GUI");
+		JFrame frame = new JFrame();
+		frame.setType(JFrame.Type.UTILITY);//隐藏任务栏图标
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.add(view, BorderLayout.CENTER);
-		frame.setSize(500, 400);
+		frame.setSize(1000, 800);
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
 		browser.loadURL("http://localhost:9999");
