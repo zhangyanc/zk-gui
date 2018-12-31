@@ -1,4 +1,4 @@
-package pers.zyc.gui;
+package pers.zyc.zkgui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
