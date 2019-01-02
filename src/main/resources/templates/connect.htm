@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>连接到ZooKeeper</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link href="/static/css/bootstrap-lumen.min.css" rel="stylesheet"/>
+    <link href="/static/css/zkgui.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="ch-container">
+    <div class="row">
+        <div class="col-md-10 center login-header">
+            <h2>欢迎使用ZooKeeper GUI</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="well col-md-5 center login-box">
+            <form class="form-horizontal" th:action="@{/connect}" method="post">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-addon"><i class="glyphicon glyphicon-cog red"></i></span>
+                    <input type="text" name="connectString" class="form-control" placeholder="连接字符串"/>
+                </div>
+                <div class="clearfix"></div>
+
+                <p class="center col-md-5">
+                    <button type="submit" class="btn btn-primary">连接</button>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -3,6 +3,9 @@ package pers.zyc.zkgui;
 import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.zookeeper.client.ConnectStringParser;
+import org.apache.zookeeper.data.Stat;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -10,20 +13,34 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+import pers.zyc.tools.utils.Regex;
+import pers.zyc.tools.zkclient.ZKClient;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -64,15 +81,15 @@ public class Main extends JFrame implements InitializingBean {
 		}
 	}
 
-	@Value("${frame.wight}") private int wight;
-	@Value("${frame.height}") private int height;
-	@Value("${frame.resizable}") private boolean resizable;
-	@Value("${frame.iconImage}") private String iconImage;
-	@Value("http://localhost:${server.port}") private String address;
+	@Value("${frame.wight:1000}") private int wight;
+	@Value("${frame.height:600}") private int height;
+	@Value("${frame.resizable:false}") private boolean resizable;
+	@Value("${frame.iconImage:/static/image/logo.png}") private String iconImage;
+	@Value("http://localhost:${server.port:8080}") private String address;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		//setTitle("ZK GUI");
+		//setTitle("ZooKeeper GUI");
 		setSize(wight, height);
 		setResizable(resizable);
 		setType(Type.UTILITY);
@@ -86,13 +103,89 @@ public class Main extends JFrame implements InitializingBean {
 		setVisible(true);
 	}
 
+	/*@RequestMapping(path = {"", "/", "/connect"}, method = RequestMethod.GET)
+	public String connect(HttpServletRequest request, HttpServletResponse response) {
+		ZKClient zkClient = (ZKClient) request.getSession().getAttribute("ZK_CLIENT");
+		if (zkClient != null) {
+			return "redirect:/root";
+		}
+		return "connect";
+	}*/
+
+	@RequestMapping(path = "/connect", method = RequestMethod.POST)
+	public void connect(HttpServletRequest request, HttpServletResponse response,
+						  String connectString) throws Exception {
+
+		if (!Regex.ZK_ADDRESS.matches(connectString)) {
+			throw new RuntimeException("Invalid connect str: " + connectString);
+		}
+
+		ZKClient zkClient = new ZKClient(connectString, 30000);
+		if (!zkClient.waitToConnected(5, TimeUnit.SECONDS)) {
+			zkClient.destroy();
+			throw new RuntimeException("Connect to " + connectString + " timeout");
+		}
+		request.getSession().setAttribute("ZK_CLIENT", zkClient);
+		String rootPath = new ConnectStringParser(connectString).getChrootPath();
+		if (rootPath == null) {
+			rootPath = "";
+		}
+		response.sendRedirect("/" + rootPath);
+	}
+
+	@RequestMapping(path = "/quit", method = RequestMethod.POST)
+	public void quit(HttpSession session, HttpServletResponse response) throws IOException {
+		ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
+		if (zkClient != null) {
+			zkClient.destroy();
+		}
+		session.invalidate();
+		response.sendRedirect("/");
+	}
+
+	@RequestMapping(path = "/{path}", method = RequestMethod.GET)
+	public ModelAndView node(HttpSession session, @PathVariable(required = false) String path) throws Exception {
+		if (StringUtils.isBlank(path)) {
+			path = "/";
+		}
+
+		ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
+
+		Stat stat = new Stat();
+		byte[] data = zkClient.getData(path, stat);
+
+		ModelAndView mav = new ModelAndView("node");
+		mav.addObject("children", zkClient.getChildren(path));
+		mav.addObject("data", new String(data, StandardCharsets.UTF_8));
+		mav.addObject("dataLength", data.length);
+		mav.addObject("stat", stat);
+		return mav;
+	}
+
 	@Configuration
 	@SuppressWarnings("unused")
 	static class MvcConfigurer extends WebMvcConfigurerAdapter {
 
 		@Override
+		public void addInterceptors(InterceptorRegistry registry) {
+			registry.addInterceptor(new HandlerInterceptorAdapter() {
+				@Override
+				public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+										 Object handler) throws Exception {
+					HttpSession session = request.getSession();
+					ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
+					if (zkClient == null) {
+						request.getRequestDispatcher("/").forward(request, response);
+						return false;
+					}
+					return true;
+				}
+			}).addPathPatterns("/**").excludePathPatterns("/connect");
+		}
+
+		@Override
 		public void addViewControllers(ViewControllerRegistry registry) {
-			registry.addViewController("/").setViewName("index");
+			registry.addViewController("/").setViewName("connect");
 		}
 
 		@Override
