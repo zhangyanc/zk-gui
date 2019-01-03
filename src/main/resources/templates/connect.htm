@@ -10,14 +10,14 @@
 <body>
 <div class="ch-container">
     <div class="row">
-        <div class="col-md-10 center login-header">
+        <div class="col-md-12 center login-header">
             <h2>欢迎使用ZooKeeper GUI</h2>
         </div>
     </div>
 
     <div class="row">
-        <div class="well col-md-5 center login-box">
-            <form class="form-horizontal" th:action="@{/connect}" method="post">
+        <div class="well col-md-8 center login-box">
+            <form class="form-horizontal" th:action="@{/}" method="post">
                 <div class="input-group input-group-lg">
                     <span class="input-group-addon"><i class="glyphicon glyphicon-cog red"></i></span>
                     <input type="text" name="connectString" class="form-control" placeholder="连接字符串"/>

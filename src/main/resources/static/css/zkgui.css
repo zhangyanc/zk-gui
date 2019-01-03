@@ -444,11 +444,26 @@ ul.ajax-loaders {
 
 .main-menu > li > a {
     border: 1px solid rgba(221, 221, 221, 0.46);
-    padding: 5px 15px;
+    padding: 8px 15px;
 }
 
 .main-menu > li {
     margin-top: 0 !important;
+}
+
+.mb0 {
+    margin-bottom: 0;
+}
+
+.wellDiv {
+    min-height: 20px;
+    padding: 19px;
+    background-color: #fafafa;
+    border-radius: 4px;
+}
+
+.wellDiv > p {
+    margin: auto;
 }
 
 .sidebar-nav .nav-header {

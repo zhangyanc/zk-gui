@@ -12,21 +12,21 @@
         <a class="navbar-brand" href="/"><span>ZooKeeper GUI</span></a>
 
         <div class="btn-group pull-right">
-            <button class="btn btn-default" >
-                <i class="glyphicon glyphicon-off"></i><span class="hidden-sm hidden-xs">退出</span>
-                <span class="caret"></span>
+            <button onclick="window.location = '/quit'" class="btn btn-default" data-toggle="tooltip">
+                <i class="glyphicon glyphicon-off"></i>退出
             </button>
         </div>
     </div>
 </div>
-<div class="ch-container">
+<div class="ch-container" th:with="requestUrl=@{${#httpServletRequest.getRequestURI()}}">
     <div class="row">
         <div>
             <ul class="breadcrumb">
-                <li><a href="/">/</a></li>
-                <!--<li th:each="child:${children}">
-                    <a th:href="../${child}">${child}</a>
-                </li>-->
+                <li th:each="part:${requestUrl.split('/')}" th:if="${part ne ''}">
+                    <a th:href="@{${requestUrl.substring(0, requestUrl.indexOf(part) + part.length())}}">
+                        <span th:text="${part}"></span>
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
@@ -34,12 +34,10 @@
         <div class="col-sm-4 col-lg-4">
             <div class="sidebar-nav">
                 <div class="nav-canvas">
-                    <div class="nav-sm nav nav-stacked"></div>
                     <ul class="nav nav-pills nav-stacked main-menu">
                         <li class="nav-header">子节点</li>
                         <li th:each="child:${children}">
-                            <a th:href="@{${'../' + child}}">
-                                <i class="glyphicon glyphicon-home"></i>
+                            <a th:href="@{${requestUrl + '/' + child}}">
                                 <span th:text="${child}"></span></a>
                         </li>
                     </ul>
@@ -49,41 +47,57 @@
         <div class="col-sm-4 col-lg-4">
             <div class="sidebar-nav">
                 <div class="nav-canvas">
-                    <div class="nav-sm nav nav-stacked"></div>
-                    <ul class="nav nav-pills nav-stacked main-menu">
+                    <ul class="nav nav-pills nav-stacked">
                         <li class="nav-header">状态</li>
                         <li>
-                            <span>子节点个数：${stat.numChildren}</span>
-                        </li>
-                        <li>
-                            <span>字节数据长度（byte）：${stat.dataLength}</span>
-                        </li>
-                        <li>
-                            <span>ephemeralOwner：${stat.ephemeralOwner}</span>
-                        </li>
-                        <li>
-                            <span>czxid：${stat.czxid}</span>
-                        </li>
-                        <li>
-                            <span>mzxid：${stat.mzxid}</span>
-                        </li>
-                        <li>
-                            <span>pzxid：${stat.pzxid}</span>
-                        </li>
-                        <li>
-                            <span>version：${stat.version}</span>
-                        </li>
-                        <li>
-                            <span>cversion：${stat.cversion}</span>
-                        </li>
-                        <li>
-                            <span>aversion：${stat.aversion}</span>
-                        </li>
-                        <li>
-                            <span>ctime：${stat.ctime}</span>
-                        </li>
-                        <li>
-                            <span>mtime：${stat.mtime}</span>
+                            <table class="table-striped table-bordered table mb0">
+                                <tbody th:object="${stat}">
+                                    <tr>
+                                        <td>numChildren</td>
+                                        <td th:text="*{numChildren}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>dataLength</td>
+                                        <td th:text="*{dataLength}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>ephemeralOwner</td>
+                                        <td th:text="*{ephemeralOwner}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>czxid</td>
+                                        <td th:text="*{czxid}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>mzxid</td>
+                                        <td th:text="*{mzxid}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>pzxid</td>
+                                        <td th:text="*{pzxid}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>version</td>
+                                        <td th:text="*{version}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>cversion</td>
+                                        <td th:text="*{cversion}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>aversion</td>
+                                        <td th:text="*{aversion}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>ctime</td>
+                                        <td th:text="*{ctime}"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>mtime</td>
+                                        <td th:text="*{mtime}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </li>
                     </ul>
                 </div>
@@ -92,9 +106,13 @@
         <div class="col-sm-4 col-lg-4">
             <div class="sidebar-nav">
                 <div class="nav-canvas">
-                    <div class="nav-sm nav nav-stacked"></div>
-                    <ul class="nav nav-pills nav-stacked main-menu">
+                    <ul class="nav nav-pills nav-stacked">
                         <li class="nav-header">数据</li>
+                        <li>
+                            <div class="wellDiv mb0">
+                                <p style="word-break:break-all;" th:text="${data}"></p>
+                            </div>
+                        </li>
                     </ul>
                 </div>
             </div>
