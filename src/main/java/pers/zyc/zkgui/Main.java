@@ -13,13 +13,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import pers.zyc.tools.utils.Regex;
@@ -103,16 +101,16 @@ public class Main extends JFrame implements InitializingBean {
 		setVisible(true);
 	}
 
-	/*@RequestMapping(path = {"", "/", "/connect"}, method = RequestMethod.GET)
-	public String connect(HttpServletRequest request, HttpServletResponse response) {
+	@RequestMapping(path = "/", method = RequestMethod.GET)
+	public String connect(HttpServletRequest request) {
 		ZKClient zkClient = (ZKClient) request.getSession().getAttribute("ZK_CLIENT");
 		if (zkClient != null) {
-			return "redirect:/root";
+			return "redirect:/ROOT";
 		}
 		return "connect";
-	}*/
+	}
 
-	@RequestMapping(path = "/connect", method = RequestMethod.POST)
+	@RequestMapping(path = "/", method = RequestMethod.POST)
 	public void connect(HttpServletRequest request, HttpServletResponse response,
 						  String connectString) throws Exception {
 
@@ -130,10 +128,10 @@ public class Main extends JFrame implements InitializingBean {
 		if (rootPath == null) {
 			rootPath = "";
 		}
-		response.sendRedirect("/" + rootPath);
+		response.sendRedirect("/ROOT" + rootPath);
 	}
 
-	@RequestMapping(path = "/quit", method = RequestMethod.POST)
+	@RequestMapping("/quit")
 	public void quit(HttpSession session, HttpServletResponse response) throws IOException {
 		ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
 		if (zkClient != null) {
@@ -143,21 +141,22 @@ public class Main extends JFrame implements InitializingBean {
 		response.sendRedirect("/");
 	}
 
-	@RequestMapping(path = "/{path}", method = RequestMethod.GET)
-	public ModelAndView node(HttpSession session, @PathVariable(required = false) String path) throws Exception {
+	@RequestMapping(path = {"/ROOT", "/ROOT/**"})
+	public ModelAndView node(HttpServletRequest request) throws Exception {
+		String path = request.getRequestURI().substring(5);
+
 		if (StringUtils.isBlank(path)) {
 			path = "/";
+		} else if (path.charAt(path.length() - 1) == '/') {
+			path = path.substring(0, path.length() - 1);
 		}
 
-		ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
-
-		Stat stat = new Stat();
-		byte[] data = zkClient.getData(path, stat);
-
+		ZKClient zkClient = (ZKClient) request.getSession().getAttribute("ZK_CLIENT");
 		ModelAndView mav = new ModelAndView("node");
 		mav.addObject("children", zkClient.getChildren(path));
-		mav.addObject("data", new String(data, StandardCharsets.UTF_8));
-		mav.addObject("dataLength", data.length);
+		Stat stat = new Stat();
+		byte[] data = zkClient.getData(path, stat);
+		mav.addObject("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
 		mav.addObject("stat", stat);
 		return mav;
 	}
@@ -175,17 +174,12 @@ public class Main extends JFrame implements InitializingBean {
 					HttpSession session = request.getSession();
 					ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
 					if (zkClient == null) {
-						request.getRequestDispatcher("/").forward(request, response);
+						response.sendRedirect("/");
 						return false;
 					}
 					return true;
 				}
-			}).addPathPatterns("/**").excludePathPatterns("/connect");
-		}
-
-		@Override
-		public void addViewControllers(ViewControllerRegistry registry) {
-			registry.addViewController("/").setViewName("connect");
+			}).addPathPatterns("/ROOT", "/ROOT/**");
 		}
 
 		@Override
