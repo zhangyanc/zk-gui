@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" th:with="requestUrl=@{${#httpServletRequest.getRequestURI()}}">
 <head>
-    <title>Index</title>
+    <title th:text="${requestUrl.substring(5)}">ZooKeeper GUI</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <link href="/static/css/bootstrap-lumen.min.css" rel="stylesheet"/>
     <link href="/static/css/zkgui.css" rel="stylesheet"/>
@@ -9,7 +9,7 @@
 <body>
 <div class="navbar navbar-default" role="navigation">
     <div class="navbar-inner">
-        <a class="navbar-brand" href="/"><span>ZooKeeper GUI</span></a>
+        <div class="navbar-brand"><span>ZooKeeper GUI</span></div>
 
         <div class="btn-group pull-right">
             <button onclick="window.location = '/quit'" class="btn btn-default" data-toggle="tooltip">
@@ -18,11 +18,14 @@
         </div>
     </div>
 </div>
-<div class="ch-container" th:with="requestUrl=@{${#httpServletRequest.getRequestURI()}}">
+<div class="ch-container">
     <div class="row">
-        <div>
+        <div class="col-sm-12 col-lg-12">
             <ul class="breadcrumb">
-                <li th:each="part:${requestUrl.split('/')}" th:if="${part ne ''}">
+                <li>
+                    <a th:href="@{/ROOT}"><span>/</span></a>
+                </li>
+                <li th:each="part:${requestUrl.substring(5).split('/')}" th:if="${part ne ''}">
                     <a th:href="@{${requestUrl.substring(0, requestUrl.indexOf(part) + part.length())}}">
                         <span th:text="${part}"></span>
                     </a>
@@ -118,11 +121,7 @@
             </div>
         </div>
     </div>
-    <footer style="margin-top: 50px;">
-        <p class="col-md-9 col-sm-9 col-xs-12 copyright">
-            &copy;zyc 2018
-        </p>
-    </footer>
+    <footer style="margin-top: 20px;"></footer>
 </div>
 </body>
 </html>

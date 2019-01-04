@@ -4,12 +4,13 @@ import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.zookeeper.client.ConnectStringParser;
 import org.apache.zookeeper.data.Stat;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.embedded.EmbeddedServletContainerInitializedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import pers.zyc.tools.utils.Regex;
 import pers.zyc.tools.zkclient.ZKClient;
 
@@ -36,10 +38,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -47,12 +48,30 @@ import java.util.stream.Stream;
  */
 @Controller
 @SpringBootApplication
-public class Main extends JFrame implements InitializingBean {
+public class Main extends JFrame implements ApplicationListener<EmbeddedServletContainerInitializedEvent> {
 
 	public static void main(String[] args) throws Exception {
 		authIfNeed();
-		System.setProperty("java.awt.headless", "false");
-		SpringApplication.run(Main.class, args);
+		SpringApplication app = new SpringApplication(Main.class);
+		app.setHeadless(false);
+		app.setBannerMode(Banner.Mode.OFF);
+		app.setDefaultProperties(new HashMap<String, Object>() {
+			{
+				put("server.port", 9999);
+				put("server.tomcat.max-threads", 2);
+				put("server.session.timeout", -1);
+				put("spring.thymeleaf.mode", "HTML5");
+				put("spring.thymeleaf.encoding", "UTF-8");
+				put("spring.thymeleaf.content-type", "text/html");
+				put("spring.thymeleaf.cache", false);
+				put("spring.thymeleaf.prefix", "classpath:/templates/");
+				put("spring.thymeleaf.suffix", ".htm");
+				put("spring.resources.static-locations", "classpath:/static");
+				put("spring.mvc.static-path-pattern", "/static/**");
+				put("spring.mvc.throw-exception-if-no-handler-found", true);
+			}
+		});
+		app.run(args);
 	}
 
 	private static void authIfNeed() throws Exception {
@@ -80,17 +99,16 @@ public class Main extends JFrame implements InitializingBean {
 	}
 
 	@Value("${frame.wight:1000}") private int wight;
-	@Value("${frame.height:600}") private int height;
+	@Value("${frame.height:618}") private int height;
 	@Value("${frame.resizable:false}") private boolean resizable;
-	@Value("${frame.iconImage:/static/image/logo.png}") private String iconImage;
+	@Value("${frame.iconImage:/static/logo.png}") private String iconImage;
 	@Value("http://localhost:${server.port:8080}") private String address;
 
 	@Override
-	public void afterPropertiesSet() throws Exception {
-		//setTitle("ZooKeeper GUI");
+	public void onApplicationEvent(EmbeddedServletContainerInitializedEvent event) {
 		setSize(wight, height);
 		setResizable(resizable);
-		setType(Type.UTILITY);
+		//setType(Type.UTILITY);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setIconImage(Toolkit.getDefaultToolkit().createImage(Main.class.getResource(iconImage)));
@@ -113,22 +131,17 @@ public class Main extends JFrame implements InitializingBean {
 	@RequestMapping(path = "/", method = RequestMethod.POST)
 	public void connect(HttpServletRequest request, HttpServletResponse response,
 						  String connectString) throws Exception {
-
 		if (!Regex.ZK_ADDRESS.matches(connectString)) {
-			throw new RuntimeException("Invalid connect str: " + connectString);
+			throw new RuntimeException("Invalid connect string: " + connectString);
 		}
 
 		ZKClient zkClient = new ZKClient(connectString, 30000);
-		if (!zkClient.waitToConnected(5, TimeUnit.SECONDS)) {
+		if (!zkClient.waitToConnected(3, TimeUnit.SECONDS)) {
 			zkClient.destroy();
 			throw new RuntimeException("Connect to " + connectString + " timeout");
 		}
 		request.getSession().setAttribute("ZK_CLIENT", zkClient);
-		String rootPath = new ConnectStringParser(connectString).getChrootPath();
-		if (rootPath == null) {
-			rootPath = "";
-		}
-		response.sendRedirect("/ROOT" + rootPath);
+		request.getRequestDispatcher("/ROOT").forward(request, response);
 	}
 
 	@RequestMapping("/quit")
@@ -138,6 +151,7 @@ public class Main extends JFrame implements InitializingBean {
 			zkClient.destroy();
 		}
 		session.invalidate();
+		setTitle(null);
 		response.sendRedirect("/");
 	}
 
@@ -150,6 +164,7 @@ public class Main extends JFrame implements InitializingBean {
 		} else if (path.charAt(path.length() - 1) == '/') {
 			path = path.substring(0, path.length() - 1);
 		}
+		setTitle(path);
 
 		ZKClient zkClient = (ZKClient) request.getSession().getAttribute("ZK_CLIENT");
 		ModelAndView mav = new ModelAndView("node");
@@ -184,12 +199,9 @@ public class Main extends JFrame implements InitializingBean {
 
 		@Override
 		public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
-			ExceptionResolver exceptionResolver = new ExceptionResolver();
-			IntStream.of(404, 500).forEach(i -> exceptionResolver.addStatusCode("error/" + i, i));
-			Properties exceptionMappings = new Properties();
-			exceptionMappings.put("org.springframework.web.servlet.NoHandlerFoundException", "error/404");
-			exceptionMappings.put("java.lang.Throwable", "error/500");
-			exceptionResolver.setExceptionMappings(exceptionMappings);
+			SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
+			exceptionResolver.setDefaultStatusCode(500);
+			exceptionResolver.setDefaultErrorView("error");
 			exceptionResolvers.add(exceptionResolver);
 		}
 	}
