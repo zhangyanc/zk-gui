@@ -98,8 +98,8 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 		}
 	}
 
-	@Value("${frame.wight:1000}") private int wight;
-	@Value("${frame.height:618}") private int height;
+	@Value("${frame.wight:1100}") private int wight;
+	@Value("${frame.height:680}") private int height;
 	@Value("${frame.resizable:false}") private boolean resizable;
 	@Value("${frame.iconImage:/static/logo.png}") private String iconImage;
 	@Value("http://localhost:${server.port:8080}") private String address;

@@ -70,7 +70,9 @@ div.center, p.center, img.center {
     height: 60px;
 }
 
-
+td {
+    width: 50%;
+}
 
 .navbar-inner .btn-group {
     margin: 7px 5px 0 5px;
