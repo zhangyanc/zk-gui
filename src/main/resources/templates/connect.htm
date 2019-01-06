@@ -31,8 +31,10 @@
 <script src="/static/js/bootstrap.typeahead.min.js"></script>
 <script th:inline="javascript">
     $(".typeahead").typeahead({
-        source: [[${history}]],
-        showHintOnFocus: "all"
+        autoSelect: false,
+        selectOnBlur: false,
+        showHintOnFocus: "all",
+        source: [[${history}]]
     });
 </script>
 </body>
