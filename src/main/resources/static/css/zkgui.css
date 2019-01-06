@@ -123,8 +123,21 @@ td {
 }
 
 .login-box .btn {
-    margin-top: 15px;
-    width: 100%
+    margin: 5px 0 0 5px;
+}
+
+.input-group {
+    float: left;
+    width: 90%;
+}
+
+.form-control {
+    border-top-right-radius: 4px !important;
+    border-bottom-right-radius: 4px !important;
+}
+
+.dropdown-menu {
+    right: 0;
 }
 
 .breadcrumb >li > a:hover {
@@ -142,6 +155,10 @@ td {
 
 .mb0 {
     margin-bottom: 0;
+}
+
+.quit {
+    margin-right: 9px;
 }
 
 .wellDiv {

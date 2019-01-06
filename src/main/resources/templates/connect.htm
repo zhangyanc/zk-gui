@@ -14,21 +14,26 @@
             <h2>ZooKeeper GUI</h2>
         </div>
     </div>
-
     <div class="row">
-        <div class="well col-sm-8 col-lg-8 center login-box">
+        <div class="well col-sm-10 col-lg-10 center login-box">
             <form class="form-horizontal" th:action="@{/}" method="post">
                 <div class="input-group input-group-lg">
                     <span class="input-group-addon"><i class="glyphicon glyphicon-cog red"></i></span>
-                    <input type="text" name="connectString" class="form-control" placeholder="连接字符串"/>
+                    <input autocomplete="off" type="text" name="connectString"
+                           class="form-control typeahead" placeholder="连接字符串"/>
                 </div>
-                <div class="clearfix"></div>
-                <p class="center col-sm-6 col-lg-6">
-                    <button type="submit" class="btn btn-primary">连接</button>
-                </p>
+                <button type="submit" class="btn btn-primary">连接</button>
             </form>
         </div>
     </div>
 </div>
+<script src="/static/js/jquery.min.js"></script>
+<script src="/static/js/bootstrap.typeahead.min.js"></script>
+<script th:inline="javascript">
+    $(".typeahead").typeahead({
+        source: [[${history}]],
+        showHintOnFocus: "all"
+    });
+</script>
 </body>
 </html>

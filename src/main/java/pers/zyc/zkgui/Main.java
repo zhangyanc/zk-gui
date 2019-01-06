@@ -1,6 +1,8 @@
 package pers.zyc.zkgui;
 
 import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.BrowserContext;
+import com.teamdev.jxbrowser.chromium.BrowserContextParams;
 import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +16,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -30,17 +33,16 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.swing.*;
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -50,8 +52,38 @@ import java.util.stream.Stream;
 @SpringBootApplication
 public class Main extends JFrame implements ApplicationListener<EmbeddedServletContainerInitializedEvent> {
 
+	private static final String HISTORY_FILE = System.getProperty("user.home") + "/.zkgui_history";
+	private static final List<String> HISTORY_SET = new CopyOnWriteArrayList<>();
+
 	public static void main(String[] args) throws Exception {
 		authIfNeed();
+		new Thread(() -> {
+			try {
+				File file = new File(HISTORY_FILE);
+				if ((!file.exists() && !file.createNewFile()) || !file.canRead() || !file.canWrite()) {
+					return;
+				}
+				try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+					HISTORY_SET.addAll(br.lines().limit(8).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
+				}
+				long last = 0;
+				while (!Thread.currentThread().isInterrupted()) {
+					long hashcode = HISTORY_SET.hashCode();
+					if (hashcode != last) {
+						last = hashcode;
+						try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+							for (String his : HISTORY_SET) {
+								bw.write(his);
+								bw.newLine();
+							}
+							bw.flush();
+						}
+					}
+					TimeUnit.SECONDS.sleep(1);
+				}
+			} catch (Exception ignored) {
+			}
+		}).start();
 		SpringApplication app = new SpringApplication(Main.class);
 		app.setHeadless(false);
 		app.setBannerMode(Banner.Mode.OFF);
@@ -98,8 +130,8 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 		}
 	}
 
-	@Value("${frame.wight:1100}") private int wight;
-	@Value("${frame.height:680}") private int height;
+	@Value("${frame.wight:1294}") private int wight;
+	@Value("${frame.height:800}") private int height;
 	@Value("${frame.resizable:false}") private boolean resizable;
 	@Value("${frame.iconImage:/static/logo.png}") private String iconImage;
 	@Value("http://localhost:${server.port:8080}") private String address;
@@ -113,18 +145,20 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setIconImage(Toolkit.getDefaultToolkit().createImage(Main.class.getResource(iconImage)));
 
-		Browser browser = new Browser();
+		Browser browser = new Browser(new BrowserContext(
+				new BrowserContextParams(System.getProperty("user.home") + "/.zkgui")));
 		browser.loadURL(address);
 		add(new BrowserView(browser), BorderLayout.CENTER);
 		setVisible(true);
 	}
 
 	@RequestMapping(path = "/", method = RequestMethod.GET)
-	public String connect(HttpServletRequest request) {
-		ZKClient zkClient = (ZKClient) request.getSession().getAttribute("ZK_CLIENT");
+	public String connect(HttpSession session, ModelMap modelMap) {
+		ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
 		if (zkClient != null) {
 			return "redirect:/ROOT";
 		}
+		modelMap.put("history", HISTORY_SET);
 		return "connect";
 	}
 
@@ -142,6 +176,8 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 		}
 		request.getSession().setAttribute("ZK_CLIENT", zkClient);
 		request.getRequestDispatcher("/ROOT").forward(request, response);
+		HISTORY_SET.removeIf(connectString::equals);
+		HISTORY_SET.add(0, connectString);
 	}
 
 	@RequestMapping("/quit")
@@ -199,7 +235,12 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 
 		@Override
 		public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
-			SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver();
+			SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver() {
+				@Override
+				protected void logException(Exception ex, HttpServletRequest request) {
+					logger.error("System error", ex);
+				}
+			};
 			exceptionResolver.setDefaultStatusCode(500);
 			exceptionResolver.setDefaultErrorView("error");
 			exceptionResolvers.add(exceptionResolver);
