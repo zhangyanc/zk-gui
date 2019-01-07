@@ -22,14 +22,7 @@
     <div class="row">
         <div class="col-sm-12 col-lg-12">
             <ul class="breadcrumb">
-                <li>
-                    <a th:href="@{/ROOT}"><span>/</span></a>
-                </li>
-                <li th:each="part:${requestUrl.substring(5).split('/')}" th:if="${part ne ''}">
-                    <a th:href="@{${requestUrl.substring(0, requestUrl.indexOf(part) + part.length())}}">
-                        <span th:text="${part}"></span>
-                    </a>
-                </li>
+                <li><a href="#" id="/"><span>/</span></a></li>
             </ul>
         </div>
     </div>
@@ -37,12 +30,8 @@
         <div class="col-sm-4 col-lg-4">
             <div class="sidebar-nav">
                 <div class="nav-canvas">
-                    <ul class="nav nav-pills nav-stacked main-menu">
+                    <ul class="nav nav-pills nav-stacked main-menu children">
                         <li class="nav-header">子节点</li>
-                        <li th:each="child:${children}">
-                            <a th:href="@{${requestUrl + '/' + child}}">
-                                <span th:text="${child}"></span></a>
-                        </li>
                     </ul>
                 </div>
             </div>
@@ -54,50 +43,50 @@
                         <li class="nav-header">状态</li>
                         <li>
                             <table class="table-striped table-bordered table mb0">
-                                <tbody th:object="${stat}">
+                                <tbody>
                                     <tr>
                                         <td>numChildren</td>
-                                        <td th:text="*{numChildren}"></td>
+                                        <td id="numChildren"></td>
                                     </tr>
                                     <tr>
                                         <td>dataLength</td>
-                                        <td th:text="*{dataLength}"></td>
+                                        <td id="dataLength"></td>
                                     </tr>
                                     <tr>
                                         <td>ephemeralOwner</td>
-                                        <td th:text="*{ephemeralOwner}"></td>
+                                        <td id="ephemeralOwner"></td>
                                     </tr>
                                     <tr>
                                         <td>czxid</td>
-                                        <td th:text="*{czxid}"></td>
+                                        <td id="czxid"></td>
                                     </tr>
                                     <tr>
                                         <td>mzxid</td>
-                                        <td th:text="*{mzxid}"></td>
+                                        <td id="mzxid"></td>
                                     </tr>
                                     <tr>
                                         <td>pzxid</td>
-                                        <td th:text="*{pzxid}"></td>
+                                        <td id="pzxid"></td>
                                     </tr>
                                     <tr>
                                         <td>version</td>
-                                        <td th:text="*{version}"></td>
+                                        <td id="version"></td>
                                     </tr>
                                     <tr>
                                         <td>cversion</td>
-                                        <td th:text="*{cversion}"></td>
+                                        <td id="cversion"></td>
                                     </tr>
                                     <tr>
                                         <td>aversion</td>
-                                        <td th:text="*{aversion}"></td>
+                                        <td id="aversion"></td>
                                     </tr>
                                     <tr>
                                         <td>ctime</td>
-                                        <td th:text="*{ctime}"></td>
+                                        <td id="ctime"></td>
                                     </tr>
                                     <tr>
                                         <td>mtime</td>
-                                        <td th:text="*{mtime}"></td>
+                                        <td id="mtime"></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -113,7 +102,7 @@
                         <li class="nav-header">数据</li>
                         <li>
                             <div class="wellDiv mb0">
-                                <p style="word-break:break-all;" th:text="${data}"></p>
+                                <p style="word-break:break-all;" id="data"></p>
                             </div>
                         </li>
                     </ul>
@@ -123,5 +112,7 @@
     </div>
     <footer style="margin-top: 20px;"></footer>
 </div>
+<script src="/static/js/jquery.min.js"></script>
+<script src="/static/js/node.js"></script>
 </body>
 </html>

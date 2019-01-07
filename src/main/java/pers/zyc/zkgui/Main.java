@@ -1,16 +1,15 @@
 package pers.zyc.zkgui;
 
 import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.BrowserContext;
-import com.teamdev.jxbrowser.chromium.BrowserContextParams;
 import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.data.Stat;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerInitializedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
@@ -19,9 +18,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.HandlerExceptionResolver;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
@@ -40,6 +40,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -49,9 +50,13 @@ import java.util.stream.Stream;
  * @author zhangyancheng
  */
 @Controller
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+		ErrorMvcAutoConfiguration.class,
+		MultipartAutoConfiguration.class
+})
 public class Main extends JFrame implements ApplicationListener<EmbeddedServletContainerInitializedEvent> {
 
+	private static final int WEB_SERVER_PORT = 8090;
 	private static final String HISTORY_FILE = System.getProperty("user.home") + "/.zkgui_history";
 	private static final List<String> HISTORY_SET = new CopyOnWriteArrayList<>();
 
@@ -83,13 +88,13 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 				}
 			} catch (Exception ignored) {
 			}
-		}).start();
+		}) {{setDaemon(true);}}.start();
 		SpringApplication app = new SpringApplication(Main.class);
 		app.setHeadless(false);
 		app.setBannerMode(Banner.Mode.OFF);
 		app.setDefaultProperties(new HashMap<String, Object>() {
 			{
-				put("server.port", 9999);
+				put("server.port", WEB_SERVER_PORT);
 				put("server.tomcat.max-threads", 2);
 				put("server.session.timeout", -1);
 				put("spring.thymeleaf.mode", "HTML5");
@@ -101,6 +106,9 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 				put("spring.resources.static-locations", "classpath:/static");
 				put("spring.mvc.static-path-pattern", "/static/**");
 				put("spring.mvc.throw-exception-if-no-handler-found", true);
+
+				put("spring.jmx.enabled", false);
+				put("spring.mvc.formcontent.putfilter.enabled", false);
 			}
 		});
 		app.run(args);
@@ -130,33 +138,27 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 		}
 	}
 
-	@Value("${frame.wight:1294}") private int wight;
-	@Value("${frame.height:800}") private int height;
-	@Value("${frame.resizable:false}") private boolean resizable;
-	@Value("${frame.iconImage:/static/logo.png}") private String iconImage;
-	@Value("http://localhost:${server.port:8080}") private String address;
-
 	@Override
 	public void onApplicationEvent(EmbeddedServletContainerInitializedEvent event) {
-		setSize(wight, height);
-		setResizable(resizable);
-		//setType(Type.UTILITY);
+		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		Dimension screenSize = toolkit.getScreenSize();
+		setSize((int) (screenSize.width * 0.5), (int) (screenSize.height * 0.6));
+		setResizable(false);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		setIconImage(Toolkit.getDefaultToolkit().createImage(Main.class.getResource(iconImage)));
+		setIconImage(toolkit.createImage(Main.class.getResource("/static/logo.png")));
 
-		Browser browser = new Browser(new BrowserContext(
-				new BrowserContextParams(System.getProperty("user.home") + "/.zkgui")));
-		browser.loadURL(address);
+		Browser browser = new Browser();
 		add(new BrowserView(browser), BorderLayout.CENTER);
 		setVisible(true);
+		browser.loadURL("http://localhost:" + WEB_SERVER_PORT);
 	}
 
 	@RequestMapping(path = "/", method = RequestMethod.GET)
 	public String connect(HttpSession session, ModelMap modelMap) {
 		ZKClient zkClient = (ZKClient) session.getAttribute("ZK_CLIENT");
 		if (zkClient != null) {
-			return "redirect:/ROOT";
+			return "redirect:/node";
 		}
 		modelMap.put("history", HISTORY_SET);
 		return "connect";
@@ -175,7 +177,7 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 			throw new RuntimeException("Connect to " + connectString + " timeout");
 		}
 		request.getSession().setAttribute("ZK_CLIENT", zkClient);
-		request.getRequestDispatcher("/ROOT").forward(request, response);
+		response.sendRedirect("/node");
 		HISTORY_SET.removeIf(connectString::equals);
 		HISTORY_SET.add(0, connectString);
 	}
@@ -191,25 +193,23 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 		response.sendRedirect("/");
 	}
 
-	@RequestMapping(path = {"/ROOT", "/ROOT/**"})
-	public ModelAndView node(HttpServletRequest request) throws Exception {
-		String path = request.getRequestURI().substring(5);
-
-		if (StringUtils.isBlank(path)) {
-			path = "/";
-		} else if (path.charAt(path.length() - 1) == '/') {
-			path = path.substring(0, path.length() - 1);
+	@RequestMapping(path = "/info/**")
+	@ResponseBody
+	public Object nodeInfo(HttpServletRequest request) throws Exception {
+		String node = request.getRequestURI().substring(5);
+		if (StringUtils.isBlank(node)) {
+			node = "/";
 		}
-		setTitle(path);
-
+		setTitle(node);
 		ZKClient zkClient = (ZKClient) request.getSession().getAttribute("ZK_CLIENT");
-		ModelAndView mav = new ModelAndView("node");
-		mav.addObject("children", zkClient.getChildren(path));
+		List<String> children = zkClient.getChildren(node);
 		Stat stat = new Stat();
-		byte[] data = zkClient.getData(path, stat);
-		mav.addObject("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
-		mav.addObject("stat", stat);
-		return mav;
+		byte[] data = zkClient.getData(node, stat);
+		Map<String, Object> model = new HashMap<>();
+		model.put("children", children);
+		model.put("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
+		model.put("stat", stat);
+		return model;
 	}
 
 	@Configuration
@@ -230,7 +230,12 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 					}
 					return true;
 				}
-			}).addPathPatterns("/ROOT", "/ROOT/**");
+			}).addPathPatterns("/node", "/info/**");
+		}
+
+		@Override
+		public void addViewControllers(ViewControllerRegistry registry) {
+			registry.addViewController("/node").setViewName("node");
 		}
 
 		@Override
