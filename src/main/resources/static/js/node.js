@@ -21,7 +21,7 @@ $(function () {
                 var $td = $(this);
                 $td.text(result.stat[$td.attr("id")]);
             });
-            $("#data").append(result.data);
+            $("#data").text(result.data);
         })
     }
 
