@@ -83,6 +83,10 @@ td {
     margin-left: -10px;
 }
 
+.pre-scrollable {
+    max-height: 400px;
+    overflow-y: scroll;
+}
 
 .login-header {
     padding-top: 30px;
