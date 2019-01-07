@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org" th:with="requestUrl=@{${#httpServletRequest.getRequestURI()}}">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title th:text="${requestUrl.substring(5)}">ZooKeeper GUI</title>
+    <title>ZooKeeper GUI</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <link href="/static/css/bootstrap-lumen.min.css" rel="stylesheet"/>
     <link href="/static/css/zkgui.css" rel="stylesheet"/>
@@ -10,7 +10,6 @@
 <div class="navbar navbar-default" role="navigation">
     <div class="navbar-inner">
         <div class="navbar-brand"><span>ZooKeeper GUI</span></div>
-
         <div class="btn-group pull-right">
             <button onclick="window.location = '/quit'" class="btn btn-default quit">
                 <i class="glyphicon glyphicon-off"></i>退出
@@ -22,7 +21,6 @@
     <div class="row">
         <div class="col-sm-12 col-lg-12">
             <ul class="breadcrumb">
-                <li><a href="#" id="/"><span>/</span></a></li>
             </ul>
         </div>
     </div>

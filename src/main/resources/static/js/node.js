@@ -1,19 +1,17 @@
 $(function () {
-    $("ul").delegate("li a", "click", function (e) {
-        e.preventDefault();
-        var href = this.id;
+    function getNodeInfo(href) {
         $.get("/info" + href, function (result) {
-            $("ul.breadcrumb li:gt(0)").remove();
+            var $breadcrumb = $("ul.breadcrumb");
+            $breadcrumb.empty().append("<li><a href='#' id='/'><span>/</span></a></li>");
 
             var isRoot = href == '/';
             if (!isRoot) {
                 $.each(href.split("/"), function (i, v) {
                     if (v != "") {
-                        $(".breadcrumb").append("<li><a href='#' id='" + href.substr(0, href.indexOf(v) + v.length) + "'><span>" + v + "</span></a></li>");
+                        $breadcrumb.append("<li><a href='#' id='" + href.substr(0, href.indexOf(v) + v.length) + "'><span>" + v + "</span></a></li>");
                     }
                 });
             }
-
             $("ul.children li:gt(0)").remove();
             $.each(result.children, function (i, v) {
                 $("ul.children").append("<li><a href='#' id='"+(isRoot ? href + v : href + '/' + v)+"'><span>" + v + "</span></a></li>");
@@ -25,6 +23,12 @@ $(function () {
             });
             $("#data").append(result.data);
         })
+    }
+
+    $("ul").delegate("li a", "click", function (e) {
+        e.preventDefault();
+        getNodeInfo(this.id);
     });
-    $(".breadcrumb li:first a").trigger("click");
+
+    getNodeInfo('/');
 });
