@@ -142,7 +142,7 @@ public class Main extends JFrame implements ApplicationListener<EmbeddedServletC
 	public void onApplicationEvent(EmbeddedServletContainerInitializedEvent event) {
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		Dimension screenSize = toolkit.getScreenSize();
-		setSize((int) (screenSize.width * 0.5), (int) (screenSize.height * 0.6));
+		setSize((int) (screenSize.width * 0.625), (int) (screenSize.height * 0.75));
 		setResizable(false);
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
