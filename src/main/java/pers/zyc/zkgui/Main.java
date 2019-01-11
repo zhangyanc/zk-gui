@@ -157,6 +157,7 @@ public class Main {
 	@RequestMapping(path = "/", method = RequestMethod.GET)
 	public String connect(ModelMap modelMap) {
 		modelMap.put("history", HISTORY_SET);
+		frame.setTitle("连接到ZooKeeper");
 		return "connect";
 	}
 

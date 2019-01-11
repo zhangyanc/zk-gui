@@ -18,7 +18,7 @@
         <div class="well col-sm-10 col-lg-10 center login-box">
             <form class="form-horizontal" th:action="@{/}" method="post">
                 <div class="input-group input-group-lg">
-                    <span class="input-group-addon"><i class="glyphicon glyphicon-cog red"></i></span>
+                    <span class="input-group-addon"><i class="glyphicon glyphicon-fire red"></i></span>
                     <input autocomplete="off" type="text" name="connectString"
                            class="form-control typeahead" placeholder="连接字符串"/>
                 </div>
@@ -31,12 +31,7 @@
 <script src="/static/js/bootstrap.typeahead.min.js"></script>
 <script src="/static/js/canvas-nest-1.0.1.min.js"></script>
 <script th:inline="javascript">
-    $(".typeahead").typeahead({
-        autoSelect: false,
-        selectOnBlur: false,
-        showHintOnFocus: "all",
-        source: [[${history}]]
-    });
+    $(".typeahead").typeahead({autoSelect: false, selectOnBlur: false, showHintOnFocus: "all", source: [[${history}]]});
 </script>
 </body>
 </html>

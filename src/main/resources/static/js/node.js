@@ -1,6 +1,9 @@
+var currentNode;
 $(function () {
     function getNodeInfo(href) {
         $.get("/info" + href, function (result) {
+            currentNode = href;
+            $(".currentNode").text(href);
             var $breadcrumb = $("ul.breadcrumb");
             $breadcrumb.empty().append("<li><a href='#' id='/'><span>/</span></a></li>");
 
@@ -25,7 +28,7 @@ $(function () {
         })
     }
 
-    $("ul").delegate("li a", "click", function (e) {
+    $(".breadcrumb,.children").delegate("li a", "click", function (e) {
         e.preventDefault();
         getNodeInfo(this.id);
     });

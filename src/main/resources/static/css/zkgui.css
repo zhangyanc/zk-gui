@@ -29,6 +29,17 @@ div.center, p.center, img.center {
     text-align: center;
 }
 
+.quit {
+    margin-right: 13px !important;
+}
+
+.alert-info {
+    padding: 6px;
+}
+
+.childNode {
+    width: 40%;
+}
 
 .sidebar-nav {
     min-height: 0;
@@ -67,7 +78,7 @@ div.center, p.center, img.center {
     padding-top: 5px;
     padding-bottom: 5px;
     line-height: 30px;
-    height: 60px;
+    height: 50px;
 }
 
 td {
@@ -161,8 +172,23 @@ td {
     margin-bottom: 0;
 }
 
-.quit {
-    margin-right: 9px;
+footer {
+    bottom:0;
+    width: 100%;
+    margin-top: 20px;
+    position:absolute;
+}
+
+footer .navbar-brand {
+    width: 100px;
+    padding-right: 0;
+}
+
+.navbar-nav .divider-vertical {
+    height: 50px;
+    margin: 0 5px;
+    border-right: 1px solid #ffffff;
+    border-left: 1px solid #f2f2f2;
 }
 
 .wellDiv {
