@@ -108,6 +108,20 @@
         </div>
     </div>
 </div>
+<footer class="navbar-default">
+    <div class="navbar-inner">
+        <div class="navbar-brand" href="#"><span>节点操作</span></div>
+        <ul class="collapse navbar-collapse nav navbar-nav bottom-menu">
+            <li><a data-toggle="modal" href="#createModal">创建子节点</a></li>
+            <li class="divider-vertical"></li>
+            <li><a data-toggle="modal" href="#editDataModal">修改节点数据</a></li>
+            <li class="divider-vertical"></li>
+            <li><a data-toggle="modal" href="#deleteModal">删除节点</a></li>
+            <li class="divider-vertical"></li>
+            <li><a data-toggle="modal" href="#rmrModal">递归删除节点</a></li>
+        </ul>
+    </div>
+</footer>
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -120,15 +134,23 @@
                     当前节点: <strong class="currentNode"></strong>
                 </div>
                 <div class="form-group childNode">
-                    <input class="form-control" placeholder="子节点"/>
+                    <input class="form-control" name="child" placeholder="子节点"/>
+                </div>
+                <div class="form-group childNode childCheckbox">
+                    <label class="checkbox-inline">
+                        <input type="checkbox" name="ephemeral"/> 临时
+                    </label>
+                    <label class="radio-inline">
+                        <input type="checkbox" name="sequential"/> 顺序
+                    </label>
                 </div>
                 <div class="form-group">
-                    <textarea class="autogrow form-control" rows="4" placeholder="子节点数据"></textarea>
+                    <textarea class="form-control" name="childData" rows="4" placeholder="子节点数据"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
                 <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
-                <a href="#" class="btn btn-primary" data-dismiss="modal">创建</a>
+                <a href="#" class="btn btn-primary confirm">创建</a>
             </div>
         </div>
     </div>
@@ -185,26 +207,12 @@
                 <p>Here settings can be configured...</p>
             </div>
             <div class="modal-footer">
-                <a href="#" class="btn btn-default" data-dismiss="modal">Close</a>
-                <a href="#" class="btn btn-primary" data-dismiss="modal">Save changes</a>
+                <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+                <a href="#" class="btn btn-primary" data-dismiss="modal">确定</a>
             </div>
         </div>
     </div>
 </div>
-<footer class="navbar-default">
-    <div class="navbar-inner">
-        <div class="navbar-brand" href="#"><span>节点操作</span></div>
-        <ul class="collapse navbar-collapse nav navbar-nav bottom-menu">
-            <li><a data-toggle="modal" href="#createModal">创建子节点</a></li>
-            <li class="divider-vertical"></li>
-            <li><a data-toggle="modal" href="#editDataModal">修改节点数据</a></li>
-            <li class="divider-vertical"></li>
-            <li><a data-toggle="modal" href="#deleteModal">删除节点</a></li>
-            <li class="divider-vertical"></li>
-            <li><a data-toggle="modal" href="#rmrModal">递归删除节点</a></li>
-        </ul>
-    </div>
-</footer>
 <script src="/static/js/jquery.min.js"></script>
 <script src="/static/js/node.js"></script>
 <script src="/static/js/bootstrap.min.js"></script>

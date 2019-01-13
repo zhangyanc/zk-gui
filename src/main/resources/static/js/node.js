@@ -33,5 +33,29 @@ $(function () {
         getNodeInfo(this.id);
     });
 
-    getNodeInfo('/');
+    getNodeInfo("/");
+
+    $("#createModal").find(".confirm").click(function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: "/create",
+            type: "post",
+            dataType: "json",
+            data: {
+                node: currentNode + (currentNode == "/" ? "" : "/") + $("input[name=child]").val(),
+                data: $("textarea[name=childData]").val(),
+                ephemeral: $("input[name=ephemeral]").is(":checked"),
+                sequential: $("input[name=sequential]").is(":checked")
+            },
+            success: function (result) {
+                if (result.error) {
+                    console.log(result.error);
+                } else {
+                    console.log(result);
+                    getNodeInfo(currentNode);
+                    $("#createModal").modal("hide");
+                }
+            }
+        })
+    })
 });

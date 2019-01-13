@@ -38,7 +38,12 @@ div.center, p.center, img.center {
 }
 
 .childNode {
+    float: left;
     width: 40%;
+}
+
+.childCheckbox {
+    margin: 6px 20px;
 }
 
 .sidebar-nav {
