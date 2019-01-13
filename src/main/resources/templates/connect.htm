@@ -16,11 +16,12 @@
     </div>
     <div class="row">
         <div class="well col-sm-10 col-lg-10 center login-box">
+            <div th:if="${session.connectErr != null}" th:text="${session.connectErr}" class="alert alert-danger"></div>
             <form class="form-horizontal" th:action="@{/}" method="post">
                 <div class="input-group input-group-lg">
                     <span class="input-group-addon"><i class="glyphicon glyphicon-fire red"></i></span>
                     <input autocomplete="off" type="text" name="connectString"
-                           class="form-control typeahead" placeholder="连接字符串"/>
+                           class="form-control typeahead" th:value="${session.connectString}" placeholder="连接字符串"/>
                 </div>
                 <button type="submit" class="btn btn-primary">连接</button>
             </form>
