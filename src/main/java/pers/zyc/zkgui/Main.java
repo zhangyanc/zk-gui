@@ -1,9 +1,11 @@
 package pers.zyc.zkgui;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
@@ -28,6 +31,7 @@ import pers.zyc.tools.zkclient.ZKClient;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
@@ -162,15 +166,21 @@ public class Main {
 	}
 
 	@RequestMapping(path = "/", method = RequestMethod.POST)
-	public void connect(HttpServletResponse response, String connectString) throws Exception {
-		if (!Regex.ZK_ADDRESS.matches(connectString)) {
-			throw new RuntimeException("Invalid connect string: " + connectString);
-		}
+	public void connect(HttpSession session, HttpServletResponse response, String connectString) throws Exception {
+		session.removeAttribute("connectErr");
+		session.setAttribute("connectString", connectString);
 
+		if (!Regex.ZK_ADDRESS.matches(connectString)) {
+			session.setAttribute("connectErr", "错误的连接字符串!");
+			response.sendRedirect("/");
+			return;
+		}
 		ZKClient zkClient = new ZKClient(connectString, 30000);
 		if (!zkClient.waitToConnected(3, TimeUnit.SECONDS)) {
 			zkClient.destroy();
-			throw new RuntimeException("Connect to " + connectString + " timeout");
+			session.setAttribute("connectErr", "连接超时!");
+			response.sendRedirect("/");
+			return;
 		}
 		Main.zkClient = zkClient;
 		response.sendRedirect("/node");
@@ -203,6 +213,14 @@ public class Main {
 		return model;
 	}
 
+	@RequestMapping(path = "/create", method = RequestMethod.POST)
+	@ResponseBody
+	public Object createNode(String node, String data, boolean ephemeral, boolean sequential) throws Exception {
+		String created = zkClient.create(node, data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8),
+				CreateMode.fromFlag((ephemeral ? 1 : 0) + (sequential ? 2 : 0)));
+		return "{\"created\": \"" + created + "\"}";
+	}
+
 	@Configuration
 	@SuppressWarnings("unused")
 	static class MvcConfigurer extends WebMvcConfigurerAdapter {
@@ -214,10 +232,28 @@ public class Main {
 
 		@Override
 		public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
+			ObjectMapper om = new ObjectMapper();
 			SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver() {
 				@Override
 				protected void logException(Exception ex, HttpServletRequest request) {
 					logger.error("System error", ex);
+				}
+
+				@Override
+				protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response,
+														  Object handler, Exception ex) {
+					response.setContentType("application/json;charset=UTF-8");
+					try (PrintWriter responseWriter = response.getWriter()) {
+						om.writeValue(responseWriter, new HashMap<String, Object>(2) {
+							{
+								put("code", 0);
+								put("error", ex.getMessage());
+							}
+						});
+					} catch (IOException e) {
+						logException(ex, request);
+					}
+					return new ModelAndView();
 				}
 			};
 			exceptionResolver.setDefaultStatusCode(500);
