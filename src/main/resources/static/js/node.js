@@ -1,5 +1,18 @@
-var currentNode;
 $(function () {
+    var currentNode;
+
+    var notyOptions = {
+        layout:"center",
+        type:"error",
+        closeOnSelfClick: false,
+        closeButton: true,
+        timeout: 8000
+    };
+
+    function notyErr(error) {
+        noty($.extend(notyOptions, {text: error}))
+    }
+
     function getNodeInfo(href) {
         $.get("/info" + href, function (result) {
             currentNode = href;
@@ -35,7 +48,14 @@ $(function () {
 
     getNodeInfo("/");
 
-    $("#createModal").find(".confirm").click(function (e) {
+    var $createModal = $("#createModal");
+
+    $createModal.on("hidden.bs.modal", function () {
+        $("input[name=child], textarea[name=childData]").val("");
+        $("input[name=ephemeral], input[name=sequential]").attr("checked", false);
+    });
+
+    $createModal.find(".confirm").click(function (e) {
         e.preventDefault();
         $.ajax({
             url: "/create",
@@ -49,13 +69,12 @@ $(function () {
             },
             success: function (result) {
                 if (result.error) {
-                    console.log(result.error);
+                    notyErr(result.error);
                 } else {
-                    console.log(result);
+                    $createModal.modal("hide");
                     getNodeInfo(currentNode);
-                    $("#createModal").modal("hide");
                 }
             }
         })
-    })
+    });
 });
