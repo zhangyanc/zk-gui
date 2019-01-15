@@ -6,6 +6,7 @@ import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
@@ -202,7 +203,10 @@ public class Main {
 		if (StringUtils.isBlank(node)) {
 			node = "/";
 		}
-		frame.setTitle(node);
+		return getNodeInfo(node);
+	}
+
+	private static Map<String, Object> getNodeInfo(String node) throws Exception {
 		List<String> children = zkClient.getChildren(node);
 		Stat stat = new Stat();
 		byte[] data = zkClient.getData(node, stat);
@@ -210,15 +214,39 @@ public class Main {
 		model.put("children", children);
 		model.put("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
 		model.put("stat", stat);
+		frame.setTitle(node);
 		return model;
 	}
 
 	@RequestMapping(path = "/create", method = RequestMethod.POST)
 	@ResponseBody
 	public Object createNode(String node, String data, boolean ephemeral, boolean sequential) throws Exception {
-		String created = zkClient.create(node, data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8),
+		zkClient.create(node, data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8),
 				CreateMode.fromFlag((ephemeral ? 1 : 0) + (sequential ? 2 : 0)));
-		return "{\"created\": \"" + created + "\"}";
+		String parent = getParent(node);
+		return getNodeInfo(parent);
+	}
+
+	@RequestMapping(path = "/setData", method = RequestMethod.POST)
+	@ResponseBody
+	public Object setData(String node, String data) throws Exception {
+		zkClient.setData(node, data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8));
+		return getNodeInfo(node);
+	}
+
+	@RequestMapping(path = "/delete", method = RequestMethod.POST)
+	@ResponseBody
+	public Object deleteNode(String node) throws Exception {
+		ZKUtil.deleteRecursive(zkClient.getZooKeeper(), node);
+		return getNodeInfo(getParent(node));
+	}
+
+	private static String getParent(String node) {
+		String parent = node.substring(0, node.lastIndexOf("/"));
+		if (StringUtils.isBlank(parent)) {
+			parent = "/";
+		}
+		return parent;
 	}
 
 	@Configuration

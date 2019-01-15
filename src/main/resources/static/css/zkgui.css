@@ -33,8 +33,8 @@ div.center, p.center, img.center {
     margin-right: 13px !important;
 }
 
-.alert-info {
-    padding: 6px;
+.short-alert {
+    padding: 6px 15px;
 }
 
 .childNode {
@@ -178,10 +178,10 @@ td {
 }
 
 footer {
-    bottom:0;
+    bottom: 0;
     width: 100%;
     margin-top: 20px;
-    position:absolute;
+    position: fixed;
 }
 
 footer .navbar-brand {
