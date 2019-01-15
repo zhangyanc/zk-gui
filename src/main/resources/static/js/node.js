@@ -86,8 +86,8 @@ $(function () {
         }, $createModal, currentNode)
     });
 
-    $editDataModal.on("hidden.bs.modal", function () {
-        $("textarea[name=editData]").val("");
+    $editDataModal.on("show.bs.modal", function () {
+        $("textarea[name=editData]").val($("#data").text());
     });
     $editDataModal.find(".confirm").click(function (e) {
         e.preventDefault();
