@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.ba;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
@@ -200,10 +199,23 @@ public class Main {
 	@ResponseBody
 	public Object nodeInfo(HttpServletRequest request) throws Exception {
 		String node = request.getRequestURI().substring(5);
-		if (StringUtils.isBlank(node)) {
+		if (isBlank(node)) {
 			node = "/";
 		}
 		return getNodeInfo(node);
+	}
+
+	private static boolean isBlank(String cs) {
+		int strLen;
+		if (cs == null || (strLen = cs.length()) == 0) {
+			return true;
+		}
+		for (int i = 0; i < strLen; i++) {
+			if (!Character.isWhitespace(cs.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static Map<String, Object> getNodeInfo(String node) throws Exception {
@@ -242,7 +254,7 @@ public class Main {
 
 	private static String getParent(String node) {
 		String parent = node.substring(0, node.lastIndexOf("/"));
-		if (StringUtils.isBlank(parent)) {
+		if (isBlank(parent)) {
 			parent = "/";
 		}
 		return parent;
