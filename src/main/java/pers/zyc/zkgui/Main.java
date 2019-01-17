@@ -221,16 +221,15 @@ public class Main {
 	@RequestMapping(path = "/create", method = RequestMethod.POST)
 	@ResponseBody
 	public Object createNode(String node, String data, boolean ephemeral, boolean sequential) throws Exception {
-		zkClient.create(node, data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8),
+		zkClient.create(node, data == null ? null : data.getBytes(StandardCharsets.UTF_8),
 				CreateMode.fromFlag((ephemeral ? 1 : 0) + (sequential ? 2 : 0)));
-		String parent = getParent(node);
-		return getNodeInfo(parent);
+		return getNodeInfo(getParent(node));
 	}
 
 	@RequestMapping(path = "/setData", method = RequestMethod.POST)
 	@ResponseBody
 	public Object setData(String node, String data) throws Exception {
-		zkClient.setData(node, data == null ? new byte[0] : data.getBytes(StandardCharsets.UTF_8));
+		zkClient.setData(node, data == null ? null : data.getBytes(StandardCharsets.UTF_8));
 		return getNodeInfo(node);
 	}
 
