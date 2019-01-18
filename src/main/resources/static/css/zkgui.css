@@ -14,7 +14,7 @@ select {
 }
 
 .ch-container {
-    padding: 0 15px;
+    padding: 0 15px 75px;
 }
 
 footer {
@@ -98,11 +98,6 @@ td {
     margin-left: -10px;
 }
 
-.pre-scrollable {
-    max-height: 400px;
-    overflow-y: scroll;
-}
-
 .login-header {
     padding-top: 30px;
     height: 120px;
@@ -177,9 +172,9 @@ td {
 }
 
 footer {
+    left: 0;
+    right: 0;
     bottom: 0;
-    width: 100%;
-    margin-top: 20px;
     position: fixed;
 }
 
@@ -212,7 +207,7 @@ footer .navbar-brand {
     font-size: 11px;
     font-weight: bold;
     line-height: 35px;
-    color: #999999;
+    /*color: #999999;*/
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
     text-transform: uppercase;
 }
