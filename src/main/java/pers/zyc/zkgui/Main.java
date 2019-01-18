@@ -1,9 +1,15 @@
 package pers.zyc.zkgui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.ba;
-import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.HPos;
+import javafx.geometry.VPos;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.layout.Region;
+import javafx.scene.web.WebView;
+import javafx.stage.Stage;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
@@ -12,10 +18,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerInitializedEvent;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,80 +37,58 @@ import pers.zyc.tools.zkclient.ZKClient;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.swing.*;
 import java.awt.*;
 import java.io.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author zhangyancheng
  */
 @Controller
 @SpringBootApplication(exclude = {ErrorMvcAutoConfiguration.class, MultipartAutoConfiguration.class})
-public class Main {
+public class Main extends Application {
 
 	private static final int WEB_SERVER_PORT = 8090;
 	private static final String HISTORY_FILE = System.getProperty("user.home") + "/.zkgui_history";
 	private static final List<String> HISTORY_SET = new CopyOnWriteArrayList<>();
-	private static JFrame frame;
+	private static Stage stage;
 	private static ZKClient zkClient;
 
-	public static void main(String[] args) throws Exception {
-		authIfNeed();
-		loadHistory();
-		SpringApplication app = new SpringApplication(Main.class);
-		app.setHeadless(false);
-		app.setBannerMode(Banner.Mode.OFF);
-		app.setDefaultProperties(new HashMap<String, Object>() {
-			{
-				put("server.port", WEB_SERVER_PORT);
-				put("server.tomcat.max-threads", 2);
-				put("server.session.timeout", -1);
-				put("spring.thymeleaf.mode", "HTML5");
-				put("spring.thymeleaf.encoding", "UTF-8");
-				put("spring.thymeleaf.content-type", "text/html");
-				put("spring.thymeleaf.cache", false);
-				put("spring.thymeleaf.prefix", "classpath:/templates/");
-				put("spring.thymeleaf.suffix", ".htm");
-				put("spring.resources.static-locations", "classpath:/static");
-				put("spring.mvc.static-path-pattern", "/static/**");
-				put("spring.mvc.throw-exception-if-no-handler-found", true);
+	private static final Map<String, Object> PROPERTIES = new HashMap<String, Object>() {
+		{
+			put("server.port", WEB_SERVER_PORT);
+			put("server.tomcat.max-threads", 2);
+			put("server.session.timeout", -1);
+			put("spring.thymeleaf.mode", "HTML5");
+			put("spring.thymeleaf.encoding", "UTF-8");
+			put("spring.thymeleaf.content-type", "text/html");
+			put("spring.thymeleaf.cache", false);
+			put("spring.thymeleaf.prefix", "classpath:/templates/");
+			put("spring.thymeleaf.suffix", ".htm");
+			put("spring.resources.static-locations", "classpath:/static");
+			put("spring.mvc.static-path-pattern", "/static/**");
+			put("spring.mvc.throw-exception-if-no-handler-found", true);
 
-				put("spring.jmx.enabled", false);
-				put("spring.mvc.formcontent.putfilter.enabled", false);
-			}
-		});
-		app.addListeners((EmbeddedServletContainerInitializedEvent e) -> {
-			Toolkit toolkit = Toolkit.getDefaultToolkit();
-			Dimension screenSize = toolkit.getScreenSize();
-			frame = new JFrame();
-			frame.setSize((int) (screenSize.width * 0.625), (int) (screenSize.height * 0.75));
-			frame.setLocationRelativeTo(null);
-			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-			frame.setIconImage(toolkit.createImage(Main.class.getResource("/static/logo.png")));
+			put("spring.jmx.enabled", false);
+			put("spring.mvc.formcontent.putfilter.enabled", false);
+		}
+	};
 
-			Browser browser = new Browser();
-			frame.add(new BrowserView(browser), BorderLayout.CENTER);
-			frame.setVisible(true);
-			browser.loadURL("http://localhost:" + WEB_SERVER_PORT);
-		});
-		app.addListeners((ContextClosedEvent e) -> Optional.ofNullable(zkClient).ifPresent(ZKClient::destroy));
-		app.run(args);
+	public static void main(String[] args) {
+		launch(args);
 	}
 
-	private static void loadHistory() {
-		new Thread(() -> {
+	@Override
+	public void init() throws Exception {
+		CompletableFuture.runAsync(() -> {
 			try {
 				File file = new File(HISTORY_FILE);
 				if ((!file.exists() && !file.createNewFile()) || !file.canRead() || !file.canWrite()) {
@@ -127,41 +110,48 @@ public class Main {
 							bw.flush();
 						}
 					}
-					TimeUnit.SECONDS.sleep(1);
+					TimeUnit.SECONDS.sleep(5);
 				}
 			} catch (Exception ignored) {
 			}
-		}) {{setDaemon(true);}}.start();
+		});
 	}
 
-	private static void authIfNeed() throws Exception {
-		ClassPathResource cpr = new ClassPathResource("/META-INF/teamdev.licenses");
-		if (!cpr.exists()) {
-			throw new FileNotFoundException("Missing teamdev.licenses");
-		}
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(cpr.getInputStream()))) {
-			if (br.lines().noneMatch("SigB: 1"::equals)) {
-				return;
+	@Override
+	public void start(Stage stage) throws Exception {
+		WebView webview = new WebView();
+		CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
+			SpringApplication app = new SpringApplication(getClass());
+			app.setBannerMode(Banner.Mode.OFF);
+			app.setDefaultProperties(PROPERTIES);
+			app.addListeners((ContextClosedEvent e) -> Optional.ofNullable(zkClient).ifPresent(ZKClient::destroy));
+			return app.run();
+		}).thenAccept(ConfigurableApplicationContext::registerShutdownHook);
+
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		stage.setScene(new Scene(new Region() {
+			{
+				getChildren().add(webview);
+				getStyleClass().add("browser");
 			}
-			Field mf = Field.class.getDeclaredField("modifiers");
-			mf.setAccessible(true);
-			Stream.of("e", "f").forEach(s -> {
-				try {
-					Field f = ba.class.getDeclaredField(s);
-					f.setAccessible(true);
-					mf.setInt(f, f.getModifiers() & ~Modifier.FINAL);
-					f.set(null, new BigInteger("1"));
-				} catch (Exception ignored) {
-				}
-			});
-			mf.setAccessible(false);
-		}
+
+			@Override
+			protected void layoutChildren() {
+				layoutInArea(webview, 0 , 0 , getWidth(), getHeight(), 0, HPos.CENTER, VPos.CENTER);
+			}
+		}, screenSize.getWidth() * 0.625, screenSize.getHeight() * 0.75));
+		stage.setTitle("ZooKeeper GUI");
+		stage.getIcons().add(new Image(getClass().getResourceAsStream("/static/logo.png")));
+		stage.setOnCloseRequest(v -> System.exit(0));
+		future.join();
+		stage.show();
+		webview.getEngine().load("http://localhost:" + WEB_SERVER_PORT);
+		Main.stage = stage;
 	}
 
 	@RequestMapping(path = "/", method = RequestMethod.GET)
 	public String connect(ModelMap modelMap) {
 		modelMap.put("history", HISTORY_SET);
-		frame.setTitle("连接到ZooKeeper");
 		return "connect";
 	}
 
@@ -191,7 +181,6 @@ public class Main {
 	@RequestMapping("/quit")
 	public void quit(HttpServletResponse response) throws IOException {
 		zkClient.destroy();
-		frame.setTitle(null);
 		response.sendRedirect("/");
 	}
 
@@ -226,7 +215,7 @@ public class Main {
 		model.put("children", children);
 		model.put("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
 		model.put("stat", stat);
-		frame.setTitle(node);
+		Platform.runLater(() -> Main.stage.setTitle(node));
 		return model;
 	}
 
@@ -296,7 +285,6 @@ public class Main {
 				}
 			};
 			exceptionResolver.setDefaultStatusCode(500);
-			exceptionResolver.setDefaultErrorView("error");
 			exceptionResolvers.add(exceptionResolver);
 		}
 	}
