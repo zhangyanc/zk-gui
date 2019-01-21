@@ -11,7 +11,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>pers.zyc</groupId>
 	<artifactId>zk-gui</artifactId>
-	<version>1.0</version>
+	<version>1.1</version>
 
 	<properties>
 		<maven.test.skip>true</maven.test.skip>
