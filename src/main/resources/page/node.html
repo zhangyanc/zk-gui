@@ -1,0 +1,307 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>ZooKeeper GUI</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link href="../css/bootstrap-lumen.min.css" rel="stylesheet"/>
+    <link href="../css/jquery.noty.css" rel="stylesheet"/>
+    <link href="../css/noty_theme_default.css" rel="stylesheet"/>
+    <link href="../css/zkgui.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="navbar navbar-default" role="navigation">
+    <div class="navbar-inner">
+        <div class="navbar-brand"><span>ZooKeeper GUI</span></div>
+        <div class="btn-group pull-right quit">
+            <button onclick="javaMember.quit()" class="btn btn-default">
+                <i class="glyphicon glyphicon-off"></i> 退出
+            </button>
+        </div>
+    </div>
+</div>
+<div class="ch-container">
+    <div class="row">
+        <div class="col-sm-12 col-lg-12">
+            <ul class="breadcrumb"></ul>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-4 col-lg-4">
+            <div class="sidebar-nav">
+                <div class="nav-canvas">
+                    <ul class="nav nav-pills nav-stacked main-menu children">
+                        <li class="nav-header">子节点</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4 col-lg-4">
+            <div class="sidebar-nav">
+                <div class="nav-canvas">
+                    <ul class="nav nav-pills nav-stacked">
+                        <li class="nav-header">状态</li>
+                        <li>
+                            <table class="table-striped table-bordered table mb0">
+                                <tbody>
+                                    <tr>
+                                        <td>numChildren</td>
+                                        <td id="numChildren"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>dataLength</td>
+                                        <td id="dataLength"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>ephemeralOwner</td>
+                                        <td id="ephemeralOwner"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>czxid</td>
+                                        <td id="czxid"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>mzxid</td>
+                                        <td id="mzxid"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>pzxid</td>
+                                        <td id="pzxid"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>version</td>
+                                        <td id="version"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>cversion</td>
+                                        <td id="cversion"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>aversion</td>
+                                        <td id="aversion"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>ctime</td>
+                                        <td id="ctime"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>mtime</td>
+                                        <td id="mtime"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4 col-lg-4">
+            <div class="sidebar-nav">
+                <div class="nav-canvas">
+                    <ul class="nav nav-pills nav-stacked">
+                        <li class="nav-header">数据</li>
+                        <li>
+                            <div class="wellDiv mb0">
+                                <p style="word-break:break-all;" id="data"></p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="navbar-default">
+        <div class="navbar-inner">
+            <div class="navbar-brand"><span>节点操作</span></div>
+            <ul class="collapse navbar-collapse nav navbar-nav bottom-menu">
+                <li><a data-toggle="modal" href="#createModal">创建子节点</a></li>
+                <li class="divider-vertical"></li>
+                <li><a data-toggle="modal" href="#editDataModal">修改节点数据</a></li>
+                <li class="divider-vertical"></li>
+                <li><a data-toggle="modal" href="#deleteModal">删除节点</a></li>
+            </ul>
+        </div>
+        <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">×</button>
+                        <h3>创建子节点</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info short-alert">
+                            <strong class="currentNode"></strong>
+                        </div>
+                        <div class="form-group childNode">
+                            <input class="form-control" name="child" placeholder="子节点"/>
+                        </div>
+                        <div class="form-group childNode childCheckbox">
+                            <label class="checkbox-inline">
+                                <input type="checkbox" name="ephemeral"/> 临时
+                            </label>
+                            <label class="radio-inline">
+                                <input type="checkbox" name="sequential"/> 顺序
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <textarea class="form-control" name="childData" rows="4" placeholder="子节点数据"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-primary confirm">创建</a>
+                        <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="editDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">×</button>
+                        <h3>修改节点数据</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info short-alert">
+                            <strong class="currentNode"></strong>
+                        </div>
+                        <div class="form-group">
+                            <textarea class="autogrow form-control" name="editData" rows="4" placeholder="节点数据"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-primary confirm">修改</a>
+                        <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">×</button>
+                        <h3>删除节点</h3>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info short-alert">
+                            <strong class="currentNode"></strong>
+                        </div>
+                        <div class="alert alert-warning">
+                            删除当前节点, 如果存在子节点则将被递归删除, 确定?
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-primary confirm">确定</a>
+                        <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.min.js"></script>
+<script src="../js/jquery.noty.js"></script>
+<script type="application/javascript">
+    var javaMember;// assignment by JavaFX
+
+    var currentNode;
+
+    var notyOptions = {
+        layout:"center",
+        type:"error",
+        closeOnSelfClick: false,
+        closeButton: true,
+        timeout: 6000
+    };
+
+    function notyErr(error) {
+        noty($.extend(notyOptions, {text: error}))
+    }
+
+    function fill(node, result) {
+        $(".currentNode").text(currentNode = node);
+        var $breadcrumb = $("ul.breadcrumb");
+        $breadcrumb.empty().append("<li><a href='#' id='/'><span>/</span></a></li>");
+
+        var isRoot = node == '/';
+        if (!isRoot) {
+            $.each(node.split("/"), function (i, v) {
+                if (v != "") {
+                    $breadcrumb.append("<li><a href='#' id='" +
+                        node.substr(0, node.indexOf(v) + v.length) + "'><span>" + v + "</span></a></li>");
+                }
+            });
+        }
+        $("ul.children li:gt(0)").remove();
+        $.each(result.children, function (i, v) {
+            $("ul.children").append("<li><a href='#' id='" +
+                (isRoot ? node + v : node + '/' + v) + "'><span>" + v + "</span></a></li>");
+        });
+
+        $("tr").find("td:last").each(function() {
+            var $td = $(this);
+            $td.text(result.stat[$td.attr("id")]);
+        });
+        $("#data").text(result.data);
+    }
+
+    function getNodeInfo(node) {
+        processResult(javaMember.getNodeInfo(node), node);
+    }
+
+    function processResult(resultString, node, $model) {
+        var result = JSON.parse(resultString);
+        if (result.error) {
+            notyErr(result.error);
+        } else {
+            if ($model) {
+                $model.modal("hide");
+            }
+            fill(node, result);
+        }
+    }
+
+    $(".breadcrumb,.children").delegate("li a", "click", function (e) {
+        e.preventDefault();
+        getNodeInfo(this.id);
+    });
+
+    var $createModal = $("#createModal"), $editDataModal = $("#editDataModal"), $deleteModal = $("#deleteModal");
+
+    $createModal.on("hidden.bs.modal", function () {
+        $("input[name=child], textarea[name=childData]").val("");
+        $("input[name=ephemeral], input[name=sequential]").attr("checked", false);
+    });
+    $createModal.find(".confirm").click(function (e) {
+        e.preventDefault();
+        processResult(javaMember.createNode(
+            currentNode + (currentNode == "/" ? "" : "/") + $("input[name=child]").val(),
+            $("textarea[name=childData]").val(),
+            $("input[name=ephemeral]").is(":checked"),
+            $("input[name=sequential]").is(":checked")
+        ), currentNode, $createModal);
+    });
+
+    $editDataModal.on("show.bs.modal", function () {
+        $("textarea[name=editData]").val($("#data").text());
+    });
+    $editDataModal.find(".confirm").click(function (e) {
+        e.preventDefault();
+        processResult(javaMember.setData(
+            currentNode,
+            $("textarea[name=editData]").val()
+        ), currentNode, $editDataModal);
+    });
+
+    $deleteModal.find(".confirm").click(function (e) {
+        e.preventDefault();
+        var parent = currentNode.substring(0, currentNode.lastIndexOf("/"));
+        if (parent == "") {
+            parent = "/";
+        }
+        processResult(javaMember.deleteNode(currentNode), parent, $deleteModal);
+    });
+</script>
+</body>
+</html>

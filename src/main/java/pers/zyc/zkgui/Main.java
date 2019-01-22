@@ -3,42 +3,27 @@ package pers.zyc.zkgui;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.geometry.HPos;
-import javafx.geometry.VPos;
+import javafx.concurrent.Worker;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
-import javafx.scene.layout.Region;
+import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+import netscape.javascript.JSObject;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
-import org.springframework.boot.Banner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.HandlerExceptionResolver;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pers.zyc.tools.utils.Regex;
 import pers.zyc.tools.zkclient.ZKClient;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -52,35 +37,19 @@ import java.util.stream.Collectors;
 /**
  * @author zhangyancheng
  */
-@Controller
-@SpringBootApplication(exclude = {ErrorMvcAutoConfiguration.class, MultipartAutoConfiguration.class})
-public class Main extends Application {
+public class Main extends Application implements Bridge, InvocationHandler {
+	private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-	private static final int WEB_SERVER_PORT = 8090;
-	private static final String HISTORY_FILE = System.getProperty("user.home") + "/.zkgui_history";
-	private static final List<String> HISTORY_SET = new CopyOnWriteArrayList<>();
-	private static Stage stage;
-	private static ZKClient zkClient;
+	private static final String CONNECT_PAGE = "/page/connect.html";
+	private static final String NODE_PAGE = "/page/node.html";
+	private static final ObjectMapper OM = new ObjectMapper();
 
-	private static final Map<String, Object> PROPERTIES = new HashMap<String, Object>() {
-		{
-			put("server.port", WEB_SERVER_PORT);
-			put("server.tomcat.max-threads", 2);
-			put("server.session.timeout", -1);
-			put("spring.thymeleaf.mode", "HTML5");
-			put("spring.thymeleaf.encoding", "UTF-8");
-			put("spring.thymeleaf.content-type", "text/html");
-			put("spring.thymeleaf.cache", false);
-			put("spring.thymeleaf.prefix", "classpath:/templates/");
-			put("spring.thymeleaf.suffix", ".htm");
-			put("spring.resources.static-locations", "classpath:/static");
-			put("spring.mvc.static-path-pattern", "/static/**");
-			put("spring.mvc.throw-exception-if-no-handler-found", true);
-
-			put("spring.jmx.enabled", false);
-			put("spring.mvc.formcontent.putfilter.enabled", false);
-		}
-	};
+	private final String HISTORY_FILE = System.getProperty("user.home") + "/.zkgui_history";
+	private final List<String> HISTORY_SET = new CopyOnWriteArrayList<>();
+	private Stage stage;
+	private ZKClient zkClient;
+	private WebEngine webEngine;
+	private Bridge javaMember;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -96,6 +65,7 @@ public class Main extends Application {
 				}
 				try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 					HISTORY_SET.addAll(br.lines().limit(8).filter(s -> !s.isEmpty()).collect(Collectors.toList()));
+					LOGGER.info("Loading histories: {}", HISTORY_SET);
 				}
 				long last = 0;
 				while (!Thread.currentThread().isInterrupted()) {
@@ -112,86 +82,95 @@ public class Main extends Application {
 					}
 					TimeUnit.SECONDS.sleep(5);
 				}
-			} catch (Exception ignored) {
+			} catch (Exception e) {
+				LOGGER.error("Processing history error", e);
 			}
 		});
+		javaMember = (Bridge) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{Bridge.class}, this);
 	}
 
 	@Override
 	public void start(Stage stage) throws Exception {
+		this.stage = stage;
 		WebView webview = new WebView();
-		CompletableFuture<?> future = CompletableFuture.supplyAsync(() -> {
-			SpringApplication app = new SpringApplication(getClass());
-			app.setBannerMode(Banner.Mode.OFF);
-			app.setDefaultProperties(PROPERTIES);
-			app.addListeners((ContextClosedEvent e) -> Optional.ofNullable(zkClient).ifPresent(ZKClient::destroy));
-			return app.run();
-		}).thenAccept(ConfigurableApplicationContext::registerShutdownHook);
-
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		stage.setScene(new Scene(new Region() {
-			{
-				getChildren().add(webview);
-				getStyleClass().add("browser");
-			}
-
-			@Override
-			protected void layoutChildren() {
-				layoutInArea(webview, 0 , 0 , getWidth(), getHeight(), 0, HPos.CENTER, VPos.CENTER);
-			}
-		}, screenSize.getWidth() * 0.625, screenSize.getHeight() * 0.75));
-		stage.setTitle("ZooKeeper GUI");
-		stage.getIcons().add(new Image(getClass().getResourceAsStream("/static/logo.png")));
-		stage.setOnCloseRequest(v -> System.exit(0));
-		future.join();
+		stage.setScene(new Scene(webview, screenSize.getWidth() * 0.625, screenSize.getHeight() * 0.75));
+		stage.getIcons().add(new Image(getClass().getResourceAsStream("/logo.png")));
+		stage.setOnCloseRequest(v -> {
+			Optional.ofNullable(zkClient).ifPresent(ZKClient::destroy);
+			System.exit(0);
+		});
+		webEngine = webview.getEngine();
+		webEngine.load(getClass().getResource(CONNECT_PAGE).toString());
 		stage.show();
-		webview.getEngine().load("http://localhost:" + WEB_SERVER_PORT);
-		Main.stage = stage;
+		webEngine.getLoadWorker()
+				.stateProperty()
+				.addListener((obs, oldValue, newValue) -> {
+					if (newValue == Worker.State.SUCCEEDED) {
+						String pageLocation = webEngine.getLocation();
+						LOGGER.info("Loading {} success", pageLocation);
+						JSObject jsWindow = (JSObject) webEngine.executeScript("window");
+						jsWindow.setMember("javaMember", javaMember);
+						switch (pageLocation.substring(pageLocation.lastIndexOf("/") + 1)) {
+							case "connect.html":
+								String allHistoryStr = HISTORY_SET.stream().collect(Collectors.joining("|"));
+								jsWindow.call("typeHead", allHistoryStr);
+								break;
+							case "node.html":
+								jsWindow.call("getNodeInfo", "/");
+								break;
+							default:
+								throw new Error();
+						}
+					}
+				});
 	}
 
-	@RequestMapping(path = "/", method = RequestMethod.GET)
-	public String connect(ModelMap modelMap) {
-		modelMap.put("history", HISTORY_SET);
-		return "connect";
-	}
-
-	@RequestMapping(path = "/", method = RequestMethod.POST)
-	public void connect(HttpSession session, HttpServletResponse response, String connectString) throws Exception {
-		session.removeAttribute("connectErr");
-		session.setAttribute("connectString", connectString);
-
-		if (!Regex.ZK_ADDRESS.matches(connectString)) {
-			session.setAttribute("connectErr", "错误的连接字符串!");
-			response.sendRedirect("/");
-			return;
+	@Override
+	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		String returnToJs;
+		try {
+			returnToJs = OM.writeValueAsString(method.invoke(this, args));
+		} catch (Throwable e) {
+			if (e instanceof InvocationTargetException) {
+				e = ((InvocationTargetException) e).getTargetException();
+			}
+			LOGGER.warn("Invoke error!", e);
+			returnToJs = "{\"error\": \"" + e.getMessage() + "\"}";
 		}
-		ZKClient zkClient = new ZKClient(connectString, 30000);
-		if (!zkClient.waitToConnected(3, TimeUnit.SECONDS)) {
-			zkClient.destroy();
-			session.setAttribute("connectErr", "连接超时!");
-			response.sendRedirect("/");
-			return;
-		}
-		Main.zkClient = zkClient;
-		response.sendRedirect("/node");
-		HISTORY_SET.removeIf(connectString::equals);
-		HISTORY_SET.add(0, connectString);
+		LOGGER.debug("Return to js: {}", returnToJs);
+		return returnToJs;
 	}
 
-	@RequestMapping("/quit")
-	public void quit(HttpServletResponse response) throws IOException {
+	@Override
+	public Object connect(String connectString) throws Exception {
+		if (isBlank(connectString)) {
+			throw new RuntimeException("连接字符串不能为空!");
+		} else if (!Regex.ZK_ADDRESS.matches(connectString)) {
+			throw new RuntimeException("连接字符串格式错误!");
+		} else {
+			zkClient = new ZKClient(connectString, 30000);
+			if (!zkClient.waitToConnected(3, TimeUnit.SECONDS)) {
+				zkClient.destroy();
+				throw new RuntimeException("连接超时(3sec)!");
+			}
+			HISTORY_SET.remove(connectString);
+			HISTORY_SET.add(0, connectString);
+			webEngine.load(getClass().getResource(NODE_PAGE).toString());
+			return "{\"success\": true}";
+		}
+	}
+
+	@Override
+	public Object getNodeInfo(String node) throws Exception {
+		return getNodeInfoFromZk(node);
+	}
+
+	@Override
+	public void quit() {
 		zkClient.destroy();
-		response.sendRedirect("/");
-	}
-
-	@RequestMapping(path = "/info/**")
-	@ResponseBody
-	public Object nodeInfo(HttpServletRequest request) throws Exception {
-		String node = request.getRequestURI().substring(5);
-		if (isBlank(node)) {
-			node = "/";
-		}
-		return getNodeInfo(node);
+		webEngine.getHistory().go(-1);
+		stage.setTitle(null);
 	}
 
 	private static boolean isBlank(String cs) {
@@ -207,7 +186,7 @@ public class Main extends Application {
 		return true;
 	}
 
-	private static Map<String, Object> getNodeInfo(String node) throws Exception {
+	private Map<String, Object> getNodeInfoFromZk(String node) throws Exception {
 		List<String> children = zkClient.getChildren(node);
 		Stat stat = new Stat();
 		byte[] data = zkClient.getData(node, stat);
@@ -215,30 +194,27 @@ public class Main extends Application {
 		model.put("children", children);
 		model.put("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
 		model.put("stat", stat);
-		Platform.runLater(() -> Main.stage.setTitle(node));
+		stage.setTitle(node);
 		return model;
 	}
 
-	@RequestMapping(path = "/create", method = RequestMethod.POST)
-	@ResponseBody
+	@Override
 	public Object createNode(String node, String data, boolean ephemeral, boolean sequential) throws Exception {
 		zkClient.create(node, data == null ? null : data.getBytes(StandardCharsets.UTF_8),
 				CreateMode.fromFlag((ephemeral ? 1 : 0) + (sequential ? 2 : 0)));
-		return getNodeInfo(getParent(node));
+		return getNodeInfoFromZk(getParent(node));
 	}
 
-	@RequestMapping(path = "/setData", method = RequestMethod.POST)
-	@ResponseBody
+	@Override
 	public Object setData(String node, String data) throws Exception {
 		zkClient.setData(node, data == null ? null : data.getBytes(StandardCharsets.UTF_8));
-		return getNodeInfo(node);
+		return getNodeInfoFromZk(node);
 	}
 
-	@RequestMapping(path = "/delete", method = RequestMethod.POST)
-	@ResponseBody
+	@Override
 	public Object deleteNode(String node) throws Exception {
 		ZKUtil.deleteRecursive(zkClient.getZooKeeper(), node);
-		return getNodeInfo(getParent(node));
+		return getNodeInfoFromZk(getParent(node));
 	}
 
 	private static String getParent(String node) {
@@ -247,45 +223,5 @@ public class Main extends Application {
 			parent = "/";
 		}
 		return parent;
-	}
-
-	@Configuration
-	@SuppressWarnings("unused")
-	static class MvcConfigurer extends WebMvcConfigurerAdapter {
-
-		@Override
-		public void addViewControllers(ViewControllerRegistry registry) {
-			registry.addViewController("/node").setViewName("node");
-		}
-
-		@Override
-		public void configureHandlerExceptionResolvers(List<HandlerExceptionResolver> exceptionResolvers) {
-			ObjectMapper om = new ObjectMapper();
-			SimpleMappingExceptionResolver exceptionResolver = new SimpleMappingExceptionResolver() {
-				@Override
-				protected void logException(Exception ex, HttpServletRequest request) {
-					logger.error("System error", ex);
-				}
-
-				@Override
-				protected ModelAndView doResolveException(HttpServletRequest request, HttpServletResponse response,
-														  Object handler, Exception ex) {
-					response.setContentType("application/json;charset=UTF-8");
-					try (PrintWriter responseWriter = response.getWriter()) {
-						om.writeValue(responseWriter, new HashMap<String, Object>(2) {
-							{
-								put("code", 0);
-								put("error", ex.getMessage());
-							}
-						});
-					} catch (IOException e) {
-						logException(ex, request);
-					}
-					return new ModelAndView();
-				}
-			};
-			exceptionResolver.setDefaultStatusCode(500);
-			exceptionResolvers.add(exceptionResolver);
-		}
 	}
 }

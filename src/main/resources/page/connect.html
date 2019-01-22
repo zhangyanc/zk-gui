@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>连接到ZooKeeper</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link href="../css/bootstrap-lumen.min.css" rel="stylesheet"/>
+    <link href="../css/zkgui.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="ch-container">
+    <div class="row">
+        <div class="col-sm-8 col-lg-8 center login-header">
+            <h2>ZooKeeper GUI</h2>
+        </div>
+    </div>
+    <div class="row">
+        <div class="well col-sm-10 col-lg-10 center login-box">
+            <div class="alert alert-danger hidden errorMsg"></div>
+            <div class="input-group input-group-lg">
+                <span class="input-group-addon"><i class="glyphicon glyphicon-fire red"></i></span>
+                <input autocomplete="off" type="text" name="connectString"
+                       class="form-control typeahead" placeholder="连接字符串"/>
+            </div>
+            <button type="button" id="connect" class="btn btn-primary">连接</button>
+        </div>
+    </div>
+</div>
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.typeahead.min.js"></script>
+<script src="../js/canvas-nest-1.0.1.min.js"></script>
+<script type="application/javascript">
+    //call by JavaFX
+    function typeHead(history) {
+        var histories = history.split("\|");
+        if (histories.length > 0) {
+            $(".typeahead").val(histories[0])
+                .typeahead({autoSelect: false, selectOnBlur: false, showHintOnFocus: "all", source: histories});
+        }
+    }
+
+    var $errorMsg = $(".errorMsg");
+    var javaMember;// assignment by JavaFX
+
+    $("#connect").click(function (e) {
+        $errorMsg.addClass("hidden");
+        var result = JSON.parse(javaMember.connect($("input[name='connectString']").val()));
+        if (result.error) {
+            $errorMsg.text(result.error).removeClass("hidden");
+        }
+    });
+</script>
+</body>
+</html>

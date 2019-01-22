@@ -5,6 +5,3 @@ target
 .settings
 .project
 .flattened-pom.xml
-
-# JxBrowser License File
-license.jar
