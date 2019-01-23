@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import pers.zyc.tools.utils.Regex;
 import pers.zyc.tools.zkclient.ZKClient;
 
-import java.awt.*;
 import java.io.*;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -92,8 +91,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 	public void start(Stage stage) throws Exception {
 		this.stage = stage;
 		WebView webview = new WebView();
-		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		stage.setScene(new Scene(webview, screenSize.getWidth() * 0.625, screenSize.getHeight() * 0.75));
+		stage.setScene(new Scene(webview, 1000, 600));
 		stage.getIcons().add(new Image(getClass().getResourceAsStream("/logo.png")));
 		stage.setOnCloseRequest(v -> {
 			Optional.ofNullable(zkClient).ifPresent(ZKClient::destroy);
@@ -134,7 +132,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 			if (e instanceof InvocationTargetException) {
 				e = ((InvocationTargetException) e).getTargetException();
 			}
-			LOGGER.warn("Invoke error!", e);
+			LOGGER.warn("Invoke error: {}", e.getMessage());
 			returnToJs = "{\"error\": \"" + e.getMessage() + "\"}";
 		}
 		LOGGER.debug("Return to js: {}", returnToJs);
