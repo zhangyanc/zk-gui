@@ -13,9 +13,7 @@
     <div class="navbar-inner">
         <div class="navbar-brand"><span>ZooKeeper GUI</span></div>
         <div class="btn-group pull-right quit">
-            <button onclick="javaMember.quit()" class="btn btn-default">
-                <i class="glyphicon glyphicon-off"></i> 退出
-            </button>
+            <button onclick="javaMember.quit()" class="btn btn-default">退出</button>
         </div>
     </div>
 </div>
@@ -120,84 +118,84 @@
                 <li><a data-toggle="modal" href="#deleteModal">删除节点</a></li>
             </ul>
         </div>
-        <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal">×</button>
-                        <h3>创建子节点</h3>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info short-alert">
-                            <strong class="currentNode"></strong>
-                        </div>
-                        <div class="form-group childNode">
-                            <input class="form-control" name="child" placeholder="子节点"/>
-                        </div>
-                        <div class="form-group childNode childCheckbox">
-                            <label class="checkbox-inline">
-                                <input type="checkbox" name="ephemeral"/> 临时
-                            </label>
-                            <label class="radio-inline">
-                                <input type="checkbox" name="sequential"/> 顺序
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <textarea class="form-control" name="childData" rows="4" placeholder="子节点数据"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-primary confirm">创建</a>
-                        <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal fade" id="editDataModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal">×</button>
-                        <h3>修改节点数据</h3>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info short-alert">
-                            <strong class="currentNode"></strong>
-                        </div>
-                        <div class="form-group">
-                            <textarea class="autogrow form-control" name="editData" rows="4" placeholder="节点数据"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-primary confirm">修改</a>
-                        <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal">×</button>
-                        <h3>删除节点</h3>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-info short-alert">
-                            <strong class="currentNode"></strong>
-                        </div>
-                        <div class="alert alert-warning">
-                            删除当前节点, 如果存在子节点则将被递归删除, 确定?
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-primary confirm">确定</a>
-                        <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
-                    </div>
-                </div>
-            </div>
-        </div>
     </footer>
+</div>
+<div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">×</button>
+                <h3>创建子节点</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info short-alert">
+                    <strong class="currentNode"></strong>
+                </div>
+                <div class="form-group childNode">
+                    <input class="form-control" name="child" placeholder="子节点"/>
+                </div>
+                <div class="form-group childNode childCheckbox">
+                    <label class="checkbox-inline">
+                        <input type="checkbox" name="ephemeral"/> 临时
+                    </label>
+                    <label class="radio-inline">
+                        <input type="checkbox" name="sequential"/> 顺序
+                    </label>
+                </div>
+                <div class="form-group">
+                    <textarea class="form-control" name="childData" rows="4" placeholder="子节点数据"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-primary confirm">创建</a>
+                <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">×</button>
+                <h3>修改节点数据</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info short-alert">
+                    <strong class="currentNode"></strong>
+                </div>
+                <div class="form-group">
+                    <textarea class="autogrow form-control" name="editData" rows="4" placeholder="节点数据"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-primary confirm">修改</a>
+                <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">×</button>
+                <h3>删除节点</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info short-alert">
+                    <strong class="currentNode"></strong>
+                </div>
+                <div class="alert alert-warning">
+                    删除当前节点, 如果存在子节点则将被递归删除, 确定?
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-primary confirm">确定</a>
+                <a href="#" class="btn btn-default" data-dismiss="modal">取消</a>
+            </div>
+        </div>
+    </div>
 </div>
 <script src="../js/jquery.min.js"></script>
 <script src="../js/bootstrap.min.js"></script>
