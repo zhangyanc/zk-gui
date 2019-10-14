@@ -131,6 +131,11 @@ td {
     margin: 5px 0 0 5px;
 }
 
+#connect {
+    position: relative;
+    z-index: 2;
+}
+
 .input-group {
     float: left;
     width: 90%;
