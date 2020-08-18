@@ -23,10 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +51,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 	}
 
 	@Override
-	public void init() throws Exception {
+	public void init() {
 		CompletableFuture.runAsync(() -> {
 			try {
 				File file = new File(HISTORY_FILE);
@@ -88,7 +85,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 	}
 
 	@Override
-	public void start(Stage stage) throws Exception {
+	public void start(Stage stage) {
 		this.stage = stage;
 		WebView webview = new WebView();
 		stage.setScene(new Scene(webview, 1000, 600));
@@ -110,7 +107,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 						jsWindow.setMember("javaMember", javaMember);
 						switch (pageLocation.substring(pageLocation.lastIndexOf("/") + 1)) {
 							case "connect.html":
-								String allHistoryStr = HISTORY_SET.stream().collect(Collectors.joining("|"));
+								String allHistoryStr = String.join("|", HISTORY_SET);
 								jsWindow.call("typeHead", allHistoryStr);
 								break;
 							case "node.html":
@@ -124,7 +121,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 	}
 
 	@Override
-	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+	public Object invoke(Object proxy, Method method, Object[] args) {
 		String returnToJs;
 		try {
 			returnToJs = OM.writeValueAsString(method.invoke(this, args));
@@ -147,7 +144,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 			throw new RuntimeException("连接字符串格式错误!");
 		} else {
 			zkClient = new ZKClient(connectString, 30000);
-			if (!zkClient.waitToConnected(3, TimeUnit.SECONDS)) {
+			if (!zkClient.waitToConnected(10, TimeUnit.SECONDS)) {
 				zkClient.destroy();
 				throw new RuntimeException("连接超时(3sec)!");
 			}
@@ -188,6 +185,7 @@ public class Main extends Application implements Bridge, InvocationHandler {
 		Stat stat = new Stat();
 		byte[] data = zkClient.getData(node, stat);
 		Map<String, Object> model = new HashMap<>();
+		children.sort(String::compareToIgnoreCase);
 		model.put("children", children);
 		model.put("data", data == null ? null : new String(data, StandardCharsets.UTF_8));
 		model.put("stat", stat);
